@@ -1,0 +1,571 @@
+<!DOCTYPE html>
+<html lang="zh-TW" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="referrer" content="no-referrer">
+  <title>CYBER FOOD // 隨機抽籤機</title>
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            cyber: {
+              black: '#0a0a10',
+              card: '#12121f',
+              pink: '#ff007f',
+              cyan: '#00f3ff',
+              yellow: '#ffe600',
+              purple: '#7928ca'
+            }
+          },
+          boxShadow: {
+            'neon-pink': '0 0 20px rgba(255, 0, 127, 0.6), 0 0 40px rgba(255, 0, 127, 0.3)',
+            'neon-cyan': '0 0 20px rgba(0, 243, 255, 0.6), 0 0 40px rgba(0, 243, 255, 0.3)',
+            'neon-yellow': '0 0 20px rgba(255, 230, 0, 0.6), 0 0 40px rgba(255, 230, 0, 0.3)',
+            'glass': '0 8px 32px 0 rgba(0, 0, 0, 0.5)'
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- Canvas Confetti CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+
+  <!-- Google Fonts & FontAwesome -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;800;900&family=Noto+Sans+TC:wght@500;700;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+  <style>
+    body {
+      font-family: 'Noto Sans TC', sans-serif;
+      background-color: #07070c;
+      color: #e2e8f0;
+      overflow-x: hidden;
+    }
+
+    .font-tech {
+      font-family: 'Orbitron', 'Noto Sans TC', sans-serif;
+    }
+
+    /* Cyber Grid Background Effect */
+    .cyber-bg {
+      background-image: 
+        radial-gradient(circle at 50% 20%, rgba(121, 40, 202, 0.25) 0%, transparent 50%),
+        radial-gradient(circle at 80% 80%, rgba(0, 243, 255, 0.15) 0%, transparent 45%),
+        radial-gradient(circle at 10% 60%, rgba(255, 0, 127, 0.2) 0%, transparent 40%),
+        linear-gradient(to right, rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+      background-size: 100% 100%, 100% 100%, 100% 100%, 40px 40px, 40px 40px;
+    }
+
+    /* Slot & Bounce Animations */
+    @keyframes cyberPulse {
+      0%, 100% { opacity: 0.8; transform: scale(1); }
+      50% { opacity: 1; transform: scale(1.02); }
+    }
+
+    @keyframes slotRoll {
+      0% { transform: translateY(-15px); opacity: 0.3; filter: blur(4px); }
+      50% { transform: translateY(15px); opacity: 0.7; filter: blur(2px); }
+      100% { transform: translateY(0); opacity: 1; filter: blur(0); }
+    }
+
+    @keyframes neonGlowText {
+      0%, 100% { text-shadow: 0 0 10px rgba(0,243,255,0.8), 0 0 20px rgba(0,243,255,0.5); }
+      50% { text-shadow: 0 0 15px rgba(255,0,127,0.9), 0 0 30px rgba(255,0,127,0.6); }
+    }
+
+    .animate-slot {
+      animation: slotRoll 0.08s linear infinite;
+    }
+
+    .animate-cyber-glow {
+      animation: neonGlowText 2s infinite;
+    }
+
+    /* Custom Scrollbar */
+    ::-webkit-scrollbar {
+      width: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #0d0d18;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #00f3ff;
+      border-radius: 3px;
+      box-shadow: 0 0 10px #00f3ff;
+    }
+
+    /* Glassmorphism card backdrop */
+    .glass-card {
+      background: rgba(18, 18, 31, 0.75);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+    }
+  </style>
+</head>
+<body class="cyber-bg min-h-screen flex flex-col items-center justify-between p-4 sm:p-6 text-slate-100 selection:bg-cyber-pink selection:text-white">
+
+  <!-- Floating Custom Alert/Confirm Box -->
+  <div id="customModal" class="fixed inset-0 bg-black/80 backdrop-blur-md z-[100] hidden flex items-center justify-center p-4">
+    <div class="glass-card max-w-sm w-full p-6 rounded-2xl border border-cyber-pink/50 shadow-neon-pink text-center space-y-4">
+      <div id="modalIcon" class="text-4xl text-cyber-yellow">
+        <i class="fa-solid fa-triangle-exclamation"></i>
+      </div>
+      <p id="modalText" class="text-base font-bold text-slate-100">提示內容</p>
+      <div id="modalButtons" class="flex justify-center gap-3 pt-2">
+        <button id="modalConfirmBtn" class="px-5 py-2 bg-gradient-to-r from-cyber-pink to-cyber-purple hover:brightness-125 text-white font-bold rounded-xl transition-all shadow-md">確定</button>
+        <button id="modalCancelBtn" class="px-5 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold rounded-xl transition-all border border-slate-600 hidden">取消</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Header -->
+  <header class="w-full max-w-md flex justify-between items-center mb-4 z-10">
+    <div class="flex items-center gap-3">
+      <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-cyber-pink to-cyber-purple flex items-center justify-center shadow-neon-pink text-xl">
+        <i class="fa-solid fa-bolt text-white"></i>
+      </div>
+      <div>
+        <h1 class="font-tech font-black text-xl text-transparent bg-clip-text bg-gradient-to-r from-cyber-cyan via-white to-cyber-pink tracking-wider">
+          FOOD // MATRIX
+        </h1>
+        <p class="text-[10px] text-cyber-cyan/70 tracking-widest font-tech uppercase">Neon Selection System</p>
+      </div>
+    </div>
+    
+    <div class="flex gap-3">
+      <button id="soundToggleBtn" class="w-10 h-10 rounded-xl glass-card text-cyber-cyan hover:text-white hover:border-cyber-cyan/60 hover:shadow-neon-cyan transition-all duration-300 flex items-center justify-center" title="聲效開關">
+        <i class="fa-solid fa-volume-high text-lg"></i>
+      </button>
+      <button id="menuModalBtn" class="w-10 h-10 rounded-xl glass-card text-cyber-pink hover:text-white hover:border-cyber-pink/60 hover:shadow-neon-pink transition-all duration-300 flex items-center justify-center" title="矩陣菜單管理">
+        <i class="fa-solid fa-sliders text-lg"></i>
+      </button>
+    </div>
+  </header>
+
+  <!-- Main Card -->
+  <main class="w-full max-w-md glass-card rounded-3xl p-6 sm:p-8 shadow-glass border border-white/10 flex flex-col items-center text-center relative overflow-hidden my-auto z-10 transition-all">
+    
+    <!-- Neon Corner Accents -->
+    <div class="absolute top-0 left-0 w-8 h-8 border-t-2 border-l-2 border-cyber-cyan/80 rounded-tl-3xl"></div>
+    <div class="absolute top-0 right-0 w-8 h-8 border-t-2 border-r-2 border-cyber-pink/80 rounded-tr-3xl"></div>
+    <div class="absolute bottom-0 left-0 w-8 h-8 border-b-2 border-l-2 border-cyber-pink/80 rounded-bl-3xl"></div>
+    <div class="absolute bottom-0 right-0 w-8 h-8 border-b-2 border-r-2 border-cyber-cyan/80 rounded-br-3xl"></div>
+
+    <!-- Title Container -->
+    <div id="titleContainer" class="w-full min-h-[110px] flex flex-col justify-center items-center my-2">
+      <span class="text-[11px] font-tech text-cyber-cyan uppercase tracking-widest mb-1 flex items-center gap-1.5">
+        <span class="w-2 h-2 rounded-full bg-cyber-cyan animate-ping"></span>
+        Target Selector
+      </span>
+      <h2 id="mainTitle" class="text-3xl sm:text-4xl font-black text-white tracking-wide transition-all duration-300">
+        今天吃什麼？
+      </h2>
+      <p id="subTitle" class="text-slate-400 font-medium text-xs sm:text-sm mt-2">
+        終結選擇困難！啟動隨機抽籤演算 ⚡
+      </p>
+    </div>
+
+    <!-- Image Wrapper -->
+    <div id="imageWrapper" class="hidden w-full my-4 relative group">
+      <div class="w-full h-48 sm:h-56 rounded-2xl overflow-hidden border-2 border-cyber-cyan/50 shadow-neon-cyan bg-cyber-card relative">
+        <img id="foodImage" src="" alt="美食照片" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110">
+        <div class="absolute inset-0 bg-gradient-to-t from-cyber-black via-transparent to-transparent opacity-80"></div>
+        <div id="foodBadge" class="absolute top-3 left-3 bg-cyber-pink/90 backdrop-blur-md text-white font-bold text-xs px-3 py-1 rounded-full shadow-lg border border-pink-300/30 flex items-center gap-1.5">
+          <i class="fa-solid fa-crown text-cyber-yellow"></i> 今日命定美食
+        </div>
+      </div>
+    </div>
+
+    <!-- Buttons Container -->
+    <div class="w-full flex flex-col items-center gap-3 mt-4">
+      <button id="drawBtn" class="w-full py-4 px-8 bg-gradient-to-r from-cyber-pink via-cyber-purple to-cyber-cyan hover:brightness-125 text-white font-black text-xl sm:text-2xl rounded-2xl shadow-neon-pink transform active:scale-95 transition-all duration-200 flex items-center justify-center gap-3 font-tech border border-white/20">
+        <i class="fa-solid fa-dice-d20 text-2xl animate-spin-slow"></i>
+        <span>EXECUTE DRAW</span>
+      </button>
+
+      <a id="mapBtn" href="#" target="_blank" rel="noopener noreferrer" class="hidden w-full py-3.5 px-6 bg-slate-900/90 hover:bg-slate-800 text-cyber-cyan border border-cyber-cyan/60 hover:border-cyber-cyan font-bold text-base sm:text-lg rounded-2xl shadow-neon-cyan transform active:scale-95 transition-all duration-200 flex items-center justify-center gap-2 group">
+        <i class="fa-solid fa-map-location-dot group-hover:bounce"></i>
+        <span>前往導航 (Google Maps)</span>
+      </a>
+    </div>
+
+  </main>
+
+  <!-- History Section -->
+  <section class="w-full max-w-md mt-6 z-10">
+    <div class="flex justify-between items-center mb-2 px-2">
+      <h3 class="text-xs font-tech font-bold text-cyber-cyan/80 uppercase tracking-widest flex items-center gap-1.5">
+        <i class="fa-solid fa-clock-rotate-left"></i> LOG HISTORY
+      </h3>
+      <button id="clearHistoryBtn" class="text-xs text-cyber-pink hover:text-white transition-colors hidden font-bold">清除紀錄</button>
+    </div>
+    <div id="historyList" class="flex gap-2 overflow-x-auto pb-2 px-1 text-sm min-h-[42px] scrollbar-thin">
+      <span class="text-xs text-slate-500 italic px-2 self-center">尚無演算紀錄...</span>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="mt-6 text-center text-xs text-slate-500 font-medium z-10 font-tech">
+    <p>DESIGNED FOR CYBER FOODIES // 2026</p>
+  </footer>
+
+  <!-- Menu Modal -->
+  <div id="menuModal" class="fixed inset-0 bg-black/80 backdrop-blur-md z-50 hidden flex items-center justify-center p-4">
+    <div class="glass-card rounded-3xl w-full max-w-md p-6 shadow-2xl border border-cyber-cyan/40 max-h-[85vh] flex flex-col relative">
+      
+      <div class="flex justify-between items-center mb-4 pb-3 border-b border-white/10">
+        <h3 class="font-tech font-black text-lg text-cyber-cyan flex items-center gap-2">
+          <i class="fa-solid fa-database text-cyber-pink"></i> MENU MATRIX
+        </h3>
+        <button id="closeModalBtn" class="text-slate-400 hover:text-cyber-pink text-xl font-bold p-1 transition-colors">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <form id="addFoodForm" class="flex gap-2 mb-4">
+        <input type="text" id="foodNameInput" placeholder="輸入美食名稱 (例如: 燒肉丼飯)" required 
+               class="flex-1 px-4 py-2.5 bg-slate-900/80 border border-slate-700 rounded-xl focus:outline-none focus:border-cyber-cyan text-sm text-white placeholder-slate-500 transition-colors">
+        <button type="submit" class="bg-gradient-to-r from-cyber-cyan to-blue-600 hover:brightness-125 text-black font-bold px-4 py-2.5 rounded-xl text-sm transition-all shadow-neon-cyan">
+          新增
+        </button>
+      </form>
+
+      <div id="foodItemList" class="flex-1 overflow-y-auto space-y-2 pr-1 my-2"></div>
+
+      <div class="mt-4 pt-3 border-t border-white/10 flex justify-between items-center">
+        <button id="resetMenuBtn" class="text-xs text-slate-400 hover:text-cyber-pink transition-colors">恢復預設菜單</button>
+        <button id="saveMenuBtn" class="bg-gradient-to-r from-cyber-pink to-cyber-purple hover:brightness-125 text-white font-bold px-6 py-2 rounded-xl text-sm shadow-neon-pink transition-all">
+          完成
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+
+      const FALLBACK_IMAGE = "https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&w=800&q=80";
+
+      // 預設菜單選項
+      const DEFAULT_FOODS = [
+        {
+          name: "八戒越南咖啡",
+          image: "https://i.postimg.cc/nzX7nTF6/vietnam.webp",
+          url: "https://shorturl.at/iVaXp"
+        },
+        {
+          name: "樹科大奇積雞排（總店）",
+          image: "https://i.postimg.cc/YS9Lx8Wx/garanshude.webp",
+          url: "https://maps.app.goo.gl/Ph42FRzEjfBhK7UG9"
+        },
+        {
+          name: "燕巢風味外省麵",
+          image: "https://i.postimg.cc/6347k3z8/tiemmi.webp",
+          url: "https://maps.app.goo.gl/yUffWBPZQFP8Vig27"
+        },
+        {
+          name: "芳師傅私房菜",
+          image: "https://i.postimg.cc/qR9GSgVR/shen-shui-shi-tang.webp",
+          url: "https://maps.app.goo.gl/2rCUgXzBZFbaGEEh8"
+        },
+        {
+          name: "阿丹鹹酥雞",
+          image: "https://i.postimg.cc/Y9QrNmb0/xian-shu-ji.webp",
+          url: "https://maps.app.goo.gl/LQkaAxmpm7oucB7M8"
+        }
+      ];
+
+      // 從 LocalStorage 載入菜單
+      let storedFoods = JSON.parse(localStorage.getItem('my_custom_foods_v3'));
+      let foods = storedFoods || [...DEFAULT_FOODS];
+
+      let history = [];
+      let isDrawing = false;
+      let soundEnabled = true;
+
+      // Web Audio API
+      const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+      function playTickSound() {
+        if (!soundEnabled) return;
+        try {
+          const osc = audioCtx.createOscillator();
+          const gain = audioCtx.createGain();
+          osc.type = 'sawtooth';
+          osc.frequency.setValueAtTime(800, audioCtx.currentTime);
+          osc.frequency.exponentialRampToValueAtTime(300, audioCtx.currentTime + 0.03);
+          gain.gain.setValueAtTime(0.08, audioCtx.currentTime);
+          gain.gain.linearRampToValueAtTime(0.001, audioCtx.currentTime + 0.03);
+          osc.connect(gain);
+          gain.connect(audioCtx.destination);
+          osc.start();
+          osc.stop(audioCtx.currentTime + 0.04);
+        } catch (e) {}
+      }
+
+      function playSuccessSound() {
+        if (!soundEnabled) return;
+        try {
+          const now = audioCtx.currentTime;
+          const notes = [440, 554.37, 659.25, 880, 1108.73];
+          notes.forEach((freq, idx) => {
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(freq, now + idx * 0.07);
+            gain.gain.setValueAtTime(0.15, now + idx * 0.07);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.07 + 0.25);
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start(now + idx * 0.07);
+            osc.stop(now + idx * 0.07 + 0.3);
+          });
+        } catch (e) {}
+      }
+
+      // DOM 元件
+      const mainTitle = document.getElementById('mainTitle');
+      const subTitle = document.getElementById('subTitle');
+      const drawBtn = document.getElementById('drawBtn');
+      const mapBtn = document.getElementById('mapBtn');
+      const imageWrapper = document.getElementById('imageWrapper');
+      const foodImage = document.getElementById('foodImage');
+      const historyList = document.getElementById('historyList');
+      const clearHistoryBtn = document.getElementById('clearHistoryBtn');
+      const soundToggleBtn = document.getElementById('soundToggleBtn');
+
+      const menuModal = document.getElementById('menuModal');
+      const menuModalBtn = document.getElementById('menuModalBtn');
+      const closeModalBtn = document.getElementById('closeModalBtn');
+      const saveMenuBtn = document.getElementById('saveMenuBtn');
+      const resetMenuBtn = document.getElementById('resetMenuBtn');
+      const addFoodForm = document.getElementById('addFoodForm');
+      const foodNameInput = document.getElementById('foodNameInput');
+      const foodItemList = document.getElementById('foodItemList');
+
+      // Custom UI Alert / Confirm Modal logic
+      const customModal = document.getElementById('customModal');
+      const modalText = document.getElementById('modalText');
+      const modalConfirmBtn = document.getElementById('modalConfirmBtn');
+      const modalCancelBtn = document.getElementById('modalCancelBtn');
+
+      function showAlert(msg) {
+        modalText.textContent = msg;
+        modalCancelBtn.classList.add('hidden');
+        customModal.classList.remove('hidden');
+        return new Promise((resolve) => {
+          modalConfirmBtn.onclick = () => {
+            customModal.classList.add('hidden');
+            resolve(true);
+          };
+        });
+      }
+
+      function showConfirm(msg) {
+        modalText.textContent = msg;
+        modalCancelBtn.classList.remove('hidden');
+        customModal.classList.remove('hidden');
+        return new Promise((resolve) => {
+          modalConfirmBtn.onclick = () => {
+            customModal.classList.add('hidden');
+            resolve(true);
+          };
+          modalCancelBtn.onclick = () => {
+            customModal.classList.add('hidden');
+            resolve(false);
+          };
+        });
+      }
+
+      // 圖片報錯處理
+      foodImage.addEventListener('error', function() {
+        this.src = FALLBACK_IMAGE;
+      });
+
+      async function startDraw() {
+        if (isDrawing) return;
+        if (foods.length === 0) {
+          await showAlert("請先在菜單設定中新增至少一個美食選項！");
+          return;
+        }
+
+        if (audioCtx.state === 'suspended') {
+          audioCtx.resume();
+        }
+
+        isDrawing = true;
+        drawBtn.disabled = true;
+        drawBtn.classList.add('opacity-50', 'cursor-not-allowed');
+
+        imageWrapper.classList.add('hidden');
+        mapBtn.classList.add('hidden');
+        subTitle.textContent = "CALCULATING BEST TARGET...";
+        subTitle.className = "text-cyber-cyan font-tech text-xs tracking-widest animate-pulse mt-2";
+
+        let counter = 0;
+        const totalSteps = 28;
+        const speed = 60;
+
+        const timer = setInterval(() => {
+          const randomIndex = Math.floor(Math.random() * foods.length);
+          const currentItem = foods[randomIndex];
+
+          mainTitle.textContent = currentItem.name;
+          mainTitle.className = "text-3xl sm:text-4xl font-black text-cyber-cyan animate-slot font-tech";
+          playTickSound();
+
+          counter++;
+          if (counter >= totalSteps) {
+            clearInterval(timer);
+            finishDraw(currentItem);
+          }
+        }, speed);
+      }
+
+      function finishDraw(selected) {
+        isDrawing = false;
+        drawBtn.disabled = false;
+        drawBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+
+        mainTitle.textContent = selected.name;
+        mainTitle.className = "text-3xl sm:text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-cyber-yellow via-white to-cyber-pink animate-cyber-glow tracking-wider";
+        
+        subTitle.textContent = "SYSTEM CHOICE CONFIRMED:";
+        subTitle.className = "text-cyber-pink font-tech text-xs font-bold tracking-widest mt-2";
+
+        foodImage.src = selected.image || FALLBACK_IMAGE;
+        imageWrapper.classList.remove('hidden');
+
+        mapBtn.href = selected.url || `https://www.google.com/maps/search/${encodeURIComponent(selected.name)}`;
+        mapBtn.classList.remove('hidden');
+
+        playSuccessSound();
+        triggerConfetti();
+        addHistory(selected.name);
+      }
+
+      function triggerConfetti() {
+        if (typeof confetti === 'function') {
+          confetti({
+            particleCount: 90,
+            spread: 80,
+            origin: { y: 0.65 },
+            colors: ['#00f3ff', '#ff007f', '#ffe600', '#7928ca', '#ffffff']
+          });
+        }
+      }
+
+      function addHistory(name) {
+        history.unshift(name);
+        if (history.length > 5) history.pop();
+        renderHistory();
+      }
+
+      function renderHistory() {
+        if (history.length === 0) {
+          historyList.innerHTML = `<span class="text-xs text-slate-500 italic px-2 self-center">尚無演算紀錄...</span>`;
+          clearHistoryBtn.classList.add('hidden');
+          return;
+        }
+
+        clearHistoryBtn.classList.remove('hidden');
+        historyList.innerHTML = history.map((item, index) => `
+          <span class="inline-flex items-center gap-1 bg-slate-900/90 text-cyber-cyan border border-cyber-cyan/30 text-xs font-tech px-3 py-1.5 rounded-xl whitespace-nowrap shadow-sm">
+            <span class="text-cyber-pink font-bold">#${index + 1}</span> ${item}
+          </span>
+        `).join('');
+      }
+
+      function renderMenuList() {
+        foodItemList.innerHTML = foods.map((food, index) => `
+          <div class="flex items-center justify-between p-3 bg-slate-900/60 rounded-xl border border-white/5 hover:border-cyber-cyan/40 transition-all">
+            <span class="font-bold text-slate-200 text-sm pl-1">${food.name}</span>
+            <button data-index="${index}" class="delete-btn text-slate-500 hover:text-cyber-pink p-1.5 rounded-lg hover:bg-slate-800 transition-colors" title="刪除">
+              <i class="fa-solid fa-trash-can text-sm"></i>
+            </button>
+          </div>
+        `).join('');
+
+        document.querySelectorAll('.delete-btn').forEach(btn => {
+          btn.addEventListener('click', (e) => {
+            const idx = e.currentTarget.getAttribute('data-index');
+            deleteFood(idx);
+          });
+        });
+      }
+
+      function deleteFood(index) {
+        foods.splice(index, 1);
+        saveFoodsToStorage();
+        renderMenuList();
+      }
+
+      function saveFoodsToStorage() {
+        localStorage.setItem('my_custom_foods_v3', JSON.stringify(foods));
+      }
+
+      // Event Listeners
+      drawBtn.addEventListener('click', startDraw);
+
+      clearHistoryBtn.addEventListener('click', () => {
+        history = [];
+        renderHistory();
+      });
+
+      soundToggleBtn.addEventListener('click', () => {
+        soundEnabled = !soundEnabled;
+        soundToggleBtn.innerHTML = soundEnabled
+          ? `<i class="fa-solid fa-volume-high text-lg"></i>`
+          : `<i class="fa-solid fa-volume-xmark text-lg text-slate-500"></i>`;
+      });
+
+      menuModalBtn.addEventListener('click', () => {
+        renderMenuList();
+        menuModal.classList.remove('hidden');
+      });
+
+      closeModalBtn.addEventListener('click', () => menuModal.classList.add('hidden'));
+      saveMenuBtn.addEventListener('click', () => menuModal.classList.add('hidden'));
+
+      addFoodForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const newName = foodNameInput.value.trim();
+        if (newName) {
+          foods.push({
+            name: newName,
+            image: FALLBACK_IMAGE,
+            url: `https://www.google.com/maps/search/${encodeURIComponent(newName)}`
+          });
+          saveFoodsToStorage();
+          renderMenuList();
+          foodNameInput.value = '';
+        }
+      });
+
+      resetMenuBtn.addEventListener('click', async () => {
+        const confirmed = await showConfirm("確定要恢復成系統預設菜單嗎？");
+        if (confirmed) {
+          foods = [...DEFAULT_FOODS];
+          saveFoodsToStorage();
+          renderMenuList();
+        }
+      });
+
+      menuModal.addEventListener('click', (e) => {
+        if (e.target === menuModal) menuModal.classList.add('hidden');
+      });
+
+    });
+  </script>
+</body>
+</html>

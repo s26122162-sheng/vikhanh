@@ -210,14 +210,14 @@
             </h1>
             <p id="typewriterText" class="font-mono text-xs sm:text-sm text-cyber-gold tracking-widest mb-6 min-h-[20px] typing-cursor"></p>
 
-            <!-- 學習進度條 -->
+            <!-- 學習進度條 (已更新為 5 / 16) -->
             <div class="w-full max-w-md mx-auto bg-cyber-bg/80 rounded-full p-1.5 border border-cyber-border shadow-inner">
                 <div class="flex justify-between text-[11px] font-mono px-2 mb-1.5 text-cyber-muted">
                     <span class="text-cyber-emerald">學習總進度 (PROGRESS)</span>
-                    <span class="text-cyber-gold font-bold">4 / 16 完成 (25%)</span>
+                    <span class="text-cyber-gold font-bold">5 / 16 完成 (31%)</span>
                 </div>
                 <div class="w-full bg-cyber-border/40 h-2.5 rounded-full overflow-hidden relative">
-                    <div class="bg-gradient-to-r from-cyber-emerald via-teal-400 to-cyber-gold h-full rounded-full transition-all duration-1000 shadow-sm" style="width: 25%"></div>
+                    <div class="bg-gradient-to-r from-cyber-emerald via-teal-400 to-cyber-gold h-full rounded-full transition-all duration-1000 shadow-sm" style="width: 31.25%"></div>
                 </div>
             </div>
         </header>
@@ -317,6 +317,27 @@
                         <span>➔</span>
                     </div>
                 </a>
+
+                <!-- 第 5 週：新解鎖！ -->
+                <a href="w5/index.html" onmouseenter="playHoverSFX()" onclick="triggerClickBurst(event); playClickSFX();" class="card-active cyber-panel rounded-2xl p-5 border border-cyber-border block relative group">
+                    <div class="cyber-corner v-tl"></div>
+                    <div class="cyber-corner v-tr"></div>
+                    <div class="cyber-corner v-bl"></div>
+                    <div class="cyber-corner v-br"></div>
+
+                    <div class="flex justify-between items-start mb-3">
+                        <span class="font-mono text-xs text-cyber-emerald bg-cyber-emerald/10 px-2.5 py-0.5 rounded border border-cyber-emerald/30">WEEK 05</span>
+                        <span class="inline-flex items-center gap-1 font-mono text-[10px] text-cyber-emerald font-bold bg-cyber-emerald/15 px-2 py-0.5 rounded border border-cyber-emerald/40">
+                            <span class="w-1.5 h-1.5 rounded-full bg-cyber-emerald animate-ping"></span> 已解鎖
+                        </span>
+                    </div>
+                    <h3 class="text-lg font-serif font-bold text-cyber-text group-hover:text-cyber-emerald transition mb-1">Week 5 - JS 基礎與 DOM</h3>
+                    <p class="text-xs text-cyber-muted font-mono mb-4">JavaScript 基礎語法與 DOM 操作實戰</p>
+                    <div class="flex items-center justify-between font-mono text-xs text-cyber-emerald group-hover:translate-x-1.5 transition-transform duration-300">
+                        <span>開啟章節</span>
+                        <span>➔</span>
+                    </div>
+                </a>
                 
             </div>
         </section>
@@ -341,7 +362,7 @@
             }
         }
 
-        // 2. 動態渲染第 5 到 16 週（未解鎖）
+        // 2. 動態渲染第 6 到 16 週（未解鎖）
         const missionGrid = document.getElementById('missionGrid');
         const upcomingTitles = [
             "JavaScript 基礎語法與 DOM",
@@ -358,7 +379,8 @@
             "課程結業與未來展望"
         ];
 
-        for (let i = 5; i <= 16; i++) {
+        // Đã đổi i = 5 thành i = 6
+        for (let i = 6; i <= 16; i++) {
             const titleIndex = i - 5;
             const weekNum = i < 10 ? `0${i}` : i;
             const titleText = upcomingTitles[titleIndex] || `關卡 ${i} - 待定主題`;
